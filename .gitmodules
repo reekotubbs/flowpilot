@@ -5,7 +5,7 @@
 	path = panda
 	url = https://github.com/flow-drive-ai/panda
 [submodule "cereal"]
-	path = cerea;
+	path = cereal
 	url = https://github.com/reekotubbs/cereal.git
 [submodule "rednose_repo"]
 	path = rednose_repo
