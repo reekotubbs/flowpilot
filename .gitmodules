@@ -7,7 +7,7 @@
 #[submodule "cereal"]
 #	path = cereal
 #	url = https://github.com/flow-drive-ai/cereal
-[submodule "cereal"]
+[submodule "cereal2"]
 	path = cereal
 	url = https://github.com/reekotubbs/cereal
 [submodule "rednose_repo"]
