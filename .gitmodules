@@ -7,6 +7,7 @@
 [submodule "cereal"]
 	path = cereal
 	url = https://github.com/reekotubbs/cereal.git
+	branch = master
 [submodule "rednose_repo"]
 	path = rednose_repo
 	url = https://github.com/flowdriveai/rednose.git
