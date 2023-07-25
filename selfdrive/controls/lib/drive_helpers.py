@@ -40,6 +40,10 @@ class MPC_COST_LAT:
 def rate_limit(new_value, last_value, dw_step, up_step):
   return clip(new_value, last_value + dw_step, last_value + up_step)
 
+# from opgm-dev
+def get_steer_max(CP, v_ego):
+  return interp(v_ego, CP.steerMaxBPDEPRECATED, CP.steerMaxVDEPRECATED)
+#
 
 def update_v_cruise(v_cruise_kph, buttonEvents, button_timers, enabled, metric):
   # handle button presses. TODO: this should be in state_control, but a decelCruise press
