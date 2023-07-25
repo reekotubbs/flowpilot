@@ -16,3 +16,7 @@
 [submodule "laika_repo"]
 	path = laika_repo
 	url = https://github.com/flowdriveai/laika.git
+[submodule "cereal2"]
+	path = cereal2
+	url = https://github.com/reekotubbs/cereal.git
+	branch = community
