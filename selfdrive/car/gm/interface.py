@@ -204,8 +204,8 @@ class CarInterface(CarInterfaceBase):
       #unsure of kdV value
       ret.lateralTuning.pid.kdV = [0.3]
       ret.lateralTuning.pid.kf = 0.0002
-      ret.steerMaxBP = [10., 25.]
-      ret.steerMaxV = [1., 1.2]
+      ret.steerMaxBPDEPRECATED = [10., 25.]
+      ret.steerMaxVDEPRECATED = [1., 1.2]
 
       ret.longitudinalTuning.kpBP = [0., 35]
       ret.longitudinalTuning.kpV = [0.21, 0.46] 
