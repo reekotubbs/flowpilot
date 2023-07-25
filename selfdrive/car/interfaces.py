@@ -82,8 +82,8 @@ class CarInterfaceBase(ABC):
     ret.steerControlType = car.CarParams.SteerControlType.torque
     
     # from opgm-dev
-    ret.steerMaxBP = [0.]
-    ret.steerMaxV = [1.]
+    ret.steerMaxBPDEPRECATED = [0.]
+    ret.steerMaxVDEPRECATED = [1.]
     #
     
     ret.minSteerSpeed = 0.
