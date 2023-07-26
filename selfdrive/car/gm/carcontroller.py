@@ -4,9 +4,16 @@ from common.conversions import Conversions as CV
 from common.realtime import DT_CTRL
 from common.numpy_fast import interp
 from opendbc.can.packer import CANPacker
-from selfdrive.car import apply_std_steer_torque_limits
+
+# from opgm-dev
+from selfdrive.car import apply_std_steer_torque_limits, create_gas_interceptor_command
+#
+
 from selfdrive.car.gm import gmcan
-from selfdrive.car.gm.values import DBC, CanBus, CarControllerParams
+
+# from opgm-dev
+from selfdrive.car.gm.values import DBC, EV_CAR, NO_ASCM, CanBus, CarControllerParams
+#
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -48,8 +55,12 @@ class CarController():
     # next Panda loopback confirmation in the current CS frame.
     if CS.lka_steering_cmd_counter != self.lka_steering_cmd_counter_last:
       self.lka_steering_cmd_counter_last = CS.lka_steering_cmd_counter
-    elif (frame % P.STEER_STEP) == 0:
-      lkas_enabled = c.latActive and CS.out.vEgo > P.MIN_STEER_SPEED
+
+    # from opgm-dev with fp variables
+    if (frame % P.STEER_STEP) == 0:
+      lkas_enabled = c.latActive and not (CS.out.steerFaultTemporary or CS.out.steerFaultPermanent) and CS.out.vEgo > P.MIN_STEER_SPEED
+    #
+
       if lkas_enabled:
         new_steer = int(round(actuators.steer * P.STEER_MAX))
         apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
