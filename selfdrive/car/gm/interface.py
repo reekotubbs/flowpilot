@@ -34,33 +34,33 @@ class CarInterface(CarInterfaceBase):
     return 0.04689655 * sigmoid * (v_ego + 10.028217)
 
   ## twilsonco opgm ########################
-  @staticmethod
-  def get_steer_feedforward_bolt_euv(angle, speed):
-    ANGLE_COEF = 4.80745391
-    ANGLE_COEF2 = 0.47214969
-    ANGLE_OFFSET = 0.#-0.32202861
-    SPEED_OFFSET = 2.85629120
-    SIGMOID_COEF_RIGHT = 0.33536781
-    SIGMOID_COEF_LEFT = 0.40555956
-    SPEED_COEF = 0.02123313
+  #@staticmethod
+  #def get_steer_feedforward_bolt_euv(angle, speed):
+  #  ANGLE_COEF = 4.80745391
+  #  ANGLE_COEF2 = 0.47214969
+  #  ANGLE_OFFSET = 0.#-0.32202861
+  #  SPEED_OFFSET = 2.85629120
+  #  SIGMOID_COEF_RIGHT = 0.33536781
+  #  SIGMOID_COEF_LEFT = 0.40555956
+  #  SPEED_COEF = 0.02123313
 
-    x = ANGLE_COEF * (angle + ANGLE_OFFSET)
-    sigmoid = x / (1. + fabs(x))
-    return ((SIGMOID_COEF_RIGHT if (angle + ANGLE_OFFSET) > 0. else SIGMOID_COEF_LEFT) * sigmoid) * ((speed + SPEED_OFFSET) * SPEED_COEF) * ((fabs(angle + ANGLE_OFFSET) ** fabs(ANGLE_COEF2)))
+  #  x = ANGLE_COEF * (angle + ANGLE_OFFSET)
+  #  sigmoid = x / (1. + fabs(x))
+  #  return ((SIGMOID_COEF_RIGHT if (angle + ANGLE_OFFSET) > 0. else SIGMOID_COEF_LEFT) * sigmoid) * ((speed + SPEED_OFFSET) * SPEED_COEF) * ((fabs(angle + ANGLE_OFFSET) ** fabs(ANGLE_COEF2)))
   
-  @staticmethod
-  def get_steer_feedforward_bolt_euv_torque(desired_lateral_accel, speed):
-    ANGLE_COEF = 0.16179233
-    ANGLE_COEF2 = 0.20691964
-    ANGLE_OFFSET = 0.#0.04420955
-    SPEED_OFFSET = -7.94958973
-    SIGMOID_COEF_RIGHT = 0.34906506
-    SIGMOID_COEF_LEFT = 0.20000000
-    SPEED_COEF = 0.38748798
+  #@staticmethod
+  #def get_steer_feedforward_bolt_euv_torque(desired_lateral_accel, speed):
+  #  ANGLE_COEF = 0.16179233
+  #  ANGLE_COEF2 = 0.20691964
+  #  ANGLE_OFFSET = 0.#0.04420955
+  #  SPEED_OFFSET = -7.94958973
+  #  SIGMOID_COEF_RIGHT = 0.34906506
+  #  SIGMOID_COEF_LEFT = 0.20000000
+  #  SPEED_COEF = 0.38748798
 
-    x = ANGLE_COEF * (desired_lateral_accel + ANGLE_OFFSET) * (40.23 / (max(0.05,speed + SPEED_OFFSET))**SPEED_COEF)
-    sigmoid = erf(x)
-    return ((SIGMOID_COEF_RIGHT if (desired_lateral_accel + ANGLE_OFFSET) < 0. else SIGMOID_COEF_LEFT) * sigmoid) + ANGLE_COEF2 * (desired_lateral_accel + ANGLE_OFFSET)
+  #  x = ANGLE_COEF * (desired_lateral_accel + ANGLE_OFFSET) * (40.23 / (max(0.05,speed + SPEED_OFFSET))**SPEED_COEF)
+  #  sigmoid = erf(x)
+  #  return ((SIGMOID_COEF_RIGHT if (desired_lateral_accel + ANGLE_OFFSET) < 0. else SIGMOID_COEF_LEFT) * sigmoid) + ANGLE_COEF2 * (desired_lateral_accel + ANGLE_OFFSET)
   #############################################
   
   @staticmethod
@@ -75,18 +75,18 @@ class CarInterface(CarInterfaceBase):
     elif self.CP.carFingerprint == CAR.SILVERADO_NR:
       return self.get_steer_feedforward_silverado
     ## twilsonco opgm ########################
-    elif self.CP.carFingerprint == CAR.BOLT_EUV:
-      return self.get_steer_feedforward_bolt_euv
+    #elif self.CP.carFingerprint == CAR.BOLT_EUV:
+    #  return self.get_steer_feedforward_bolt_euv
     #############################################
     else:
       return CarInterfaceBase.get_steer_feedforward_default
 
   ## twilsonco opgm ########################
-  def get_steer_feedforward_function_torque(self):
-    if self.CP.carFingerprint == CAR.BOLT_EUV:
-      return self.get_steer_feedforward_bolt_euv_torque
-    else:
-      return CarInterfaceBase.get_steer_feedforward_torque_default
+  #def get_steer_feedforward_function_torque(self):
+  #  if self.CP.carFingerprint == CAR.BOLT_EUV:
+  #    return self.get_steer_feedforward_bolt_euv_torque
+  #  else:
+  #    return CarInterfaceBase.get_steer_feedforward_torque_default
   #############################################
 
   @staticmethod
