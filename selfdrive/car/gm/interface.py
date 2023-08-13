@@ -239,21 +239,11 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.4
       tire_stiffness_factor = 1.0
       ret.steerActuatorDelay = 0.2
-      if (Params().get_bool("EnableTorqueControl")):
-        max_lateral_accel = 3.0
-        ret.lateralTuning.init('torque')
-        ret.lateralTuning.torque.useSteeringAngle = True
-        ret.lateralTuning.torque.kp = 1.8 / max_lateral_accel
-        ret.lateralTuning.torque.ki = 0.4 / max_lateral_accel
-        ret.lateralTuning.torque.kd = 4.0 / max_lateral_accel
-        ret.lateralTuning.torque.kf = 1.0 # use with custom torque ff
-        ret.lateralTuning.torque.friction = 0.005
-      else:
-        ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 40.0], [0., 40.]]
-        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.1, 0.22], [0.01, 0.021]]
-        ret.lateralTuning.pid.kdBP = [0.]
-        ret.lateralTuning.pid.kdV = [0.6]
-        ret.lateralTuning.pid.kf = 1. # use with get_feedforward_bolt_euv
+      ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 40.0], [0., 40.]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.1, 0.22], [0.01, 0.021]]
+      ret.lateralTuning.pid.kdBP = [0.]
+      ret.lateralTuning.pid.kdV = [0.6]
+      ret.lateralTuning.pid.kf = 1. # use with get_feedforward_bolt_euv
     #############################################
     
     elif candidate == CAR.BOLT_NR:
