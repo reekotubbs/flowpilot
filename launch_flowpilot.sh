@@ -15,11 +15,11 @@ export ZMQ_MESSAGING_PROTOCOL="TCP" # TCP, INTER_PROCESS, SHARED_MEMORY
 
 export SIMULATION="1"
 #export FINGERPRINT="HONDA CIVIC 2016"
-#export FINGERPRIN="CHEVROLET BOLT EUV 2022"
-export FINGERPRIN="CHEVROLET VOLT NO RADAR"
+#export FINGERPRINT="CHEVROLET BOLT EUV 2022"
+export FINGERPRINT="CHEVROLET VOLT NO RADAR"
 
 ## android specific ##
-export USE_SNPE="1" # only works for snapdragon devices.
+export USE_SNPE="0" # only works for snapdragon devices.
 
 if pgrep -x "flowinit" > /dev/null
     then
