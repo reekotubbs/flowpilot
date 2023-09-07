@@ -235,9 +235,9 @@ GM_RX_OFFSET = 0x400
 
 DBC: Dict[str, Dict[str, str]] = defaultdict(lambda: dbc_dict('gm_global_a_powertrain_generated', 'gm_global_a_object', chassis_dbc='gm_global_a_chassis'))
 
-EV_CAR = {CAR.VOLT, CAR.BOLT_EUV, CAR.VOLT_NR]}
+EV_CAR = {CAR.VOLT, CAR.BOLT_EUV, CAR.VOLT_NR}
 
 # We're integrated at the camera with VOACC on these cars (instead of ASCM w/ OBD-II harness)
-CAMERA_ACC_CAR = {CAR.BOLT_EUV, CAR.SILVERADO, CAR.EQUINOX, CAR.TRAILBLAZER}
+CAMERA_ACC_CAR = {CAR.BOLT_EUV, CAR.SILVERADO, CAR.EQUINOX, CAR.TRAILBLAZER, CAR.VOLT_NR}
 
 STEER_THRESHOLD = 1.0
