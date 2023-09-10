@@ -10,3 +10,7 @@
 [submodule "laika_repo"]
 	path = laika_repo
 	url = https://github.com/flowdriveai/laika.git
+[submodule "opendbc"]
+	path = opendbc
+	url = https://github.com/reekotubbs/opendbc
+	branch = bleeding-edge
