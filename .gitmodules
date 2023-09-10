@@ -1,6 +1,6 @@
 [submodule "opendbc"]
 	path = opendbc
-	url = https://github.com/reekotubbs/opendbc
+	url = https://github.com/reekotubbs/opendbc/tree/bleeding-edge
 	branch = bleeding-edge
 [submodule "panda"]
 	path = panda
