@@ -1,11 +1,10 @@
-#include <algorithm>
 #include <cassert>
-#include <cmath>
-#include <map>
-#include <stdexcept>
 #include <utility>
+#include <algorithm>
+#include <map>
+#include <cmath>
 
-#include "opendbc/can/common.h"
+#include "common.h"
 
 
 void set_value(std::vector<uint8_t> &msg, const Signal &sig, int64_t ival) {

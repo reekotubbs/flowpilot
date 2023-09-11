@@ -8,8 +8,9 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#include "cereal/logger/logger.h"
-#include "opendbc/can/common.h"
+#include "common.h"
+#include "msg.capnp.h"
+
 
 int64_t get_raw_value(const std::vector<uint8_t> &msg, const Signal &sig) {
   int64_t ret = 0;
@@ -89,7 +90,9 @@ bool MessageState::update_counter_generic(int64_t v, int cnt_size) {
 }
 
 
-CANParser::CANParser(int abus, const std::string& dbc_name, const std::vector<std::pair<uint32_t, int>> &messages)
+CANParser::CANParser(int abus, const std::string& dbc_name,
+          const std::vector<MessageParseOptions> &options,
+          const std::vector<SignalParseOptions> &sigoptions)
   : bus(abus), aligned_buf(kj::heapArray<capnp::word>(1024)) {
   dbc = dbc_lookup(dbc_name);
   assert(dbc);
@@ -97,14 +100,14 @@ CANParser::CANParser(int abus, const std::string& dbc_name, const std::vector<st
 
   bus_timeout_threshold = std::numeric_limits<uint64_t>::max();
 
-  for (const auto& [address, frequency] : messages) {
-    MessageState &state = message_states[address];
-    state.address = address;
+  for (const auto& op : options) {
+    MessageState &state = message_states[op.address];
+    state.address = op.address;
     // state.check_frequency = op.check_frequency,
 
     // msg is not valid if a message isn't received for 10 consecutive steps
-    if (frequency > 0) {
-      state.check_threshold = (1000000000ULL / frequency) * 10;
+    if (op.check_frequency > 0) {
+      state.check_threshold = (1000000000ULL / op.check_frequency) * 10;
 
       // bus timeout threshold should be 10x the fastest msg
       bus_timeout_threshold = std::min(bus_timeout_threshold, state.check_threshold);
@@ -112,13 +115,13 @@ CANParser::CANParser(int abus, const std::string& dbc_name, const std::vector<st
 
     const Msg* msg = NULL;
     for (const auto& m : dbc->msgs) {
-      if (m.address == address) {
+      if (m.address == op.address) {
         msg = &m;
         break;
       }
     }
     if (!msg) {
-      fprintf(stderr, "CANParser: could not find message 0x%X in DBC %s\n", address, dbc_name.c_str());
+      fprintf(stderr, "CANParser: could not find message 0x%X in DBC %s\n", op.address, dbc_name.c_str());
       assert(false);
     }
 
@@ -126,10 +129,28 @@ CANParser::CANParser(int abus, const std::string& dbc_name, const std::vector<st
     state.size = msg->size;
     assert(state.size <= 64);  // max signal size is 64 bytes
 
-    // track all signals for this message
-    state.parse_sigs = msg->sigs;
-    state.vals.resize(msg->sigs.size());
-    state.all_vals.resize(msg->sigs.size());
+    // track checksums and counters for this message
+    for (const auto& sig : msg->sigs) {
+      if (sig.type != SignalType::DEFAULT) {
+        state.parse_sigs.push_back(sig);
+        state.vals.push_back(0);
+        state.all_vals.push_back({});
+      }
+    }
+
+    // track requested signals for this message
+    for (const auto& sigop : sigoptions) {
+      if (sigop.address != op.address) continue;
+
+      for (const auto& sig : msg->sigs) {
+        if (sig.name == sigop.name && sig.type == SignalType::DEFAULT) {
+          state.parse_sigs.push_back(sig);
+          state.vals.push_back(0);
+          state.all_vals.push_back({});
+          break;
+        }
+      }
+    }
   }
 }
 
@@ -171,7 +192,7 @@ void CANParser::update_string(const std::string &data, bool sendcan) {
 
   // extract the messages
   capnp::FlatArrayMessageReader cmsg(aligned_buf.slice(0, buf_size));
-  cereal::Event::Reader event = cmsg.getRoot<cereal::Event>();
+  Event::Reader event = cmsg.getRoot<Event>();
 
   if (first_sec == 0) {
     first_sec = event.getLogMonoTime();
@@ -195,7 +216,7 @@ void CANParser::update_strings(const std::vector<std::string> &data, std::vector
   query_latest(vals, current_sec);
 }
 
-void CANParser::UpdateCans(uint64_t sec, const capnp::List<cereal::CanData>::Reader& cans) {
+void CANParser::UpdateCans(uint64_t sec, const capnp::List<CanData>::Reader& cans) {
   //DEBUG("got %d messages\n", cans.size());
 
   bool bus_empty = true;
@@ -241,7 +262,7 @@ void CANParser::UpdateCans(uint64_t sec, const capnp::List<cereal::CanData>::Rea
 #endif
 
 void CANParser::UpdateCans(uint64_t sec, const capnp::DynamicStruct::Reader& cmsg) {
-  // assume message struct is `cereal::CanData` and parse
+  // assume message struct is `CanData` and parse
   assert(cmsg.has("address") && cmsg.has("src") && cmsg.has("dat") && cmsg.has("busTime"));
 
   if (cmsg.get("src").as<uint8_t>() != bus) {
@@ -263,7 +284,7 @@ void CANParser::UpdateCans(uint64_t sec, const capnp::DynamicStruct::Reader& cms
 }
 
 void CANParser::UpdateValid(uint64_t sec) {
-  const bool show_missing = (last_sec - first_sec) > 8e9;
+  //const bool show_missing = (last_sec - first_sec) > 8e9;
 
   bool _valid = true;
   bool _counters_valid = true;
@@ -277,12 +298,12 @@ void CANParser::UpdateValid(uint64_t sec) {
     const bool missing = state.last_seen_nanos == 0;
     const bool timed_out = (sec - state.last_seen_nanos) > state.check_threshold;
     if (state.check_threshold > 0 && (missing || timed_out)) {
-      if (show_missing && !bus_timeout) {
-        if (missing) {
-          WARN("0x%X '%s' NOT SEEN", state.address, state.name.c_str());
-        } else if (timed_out) {
-          WARN("0x%X '%s' TIMED OUT", state.address, state.name.c_str());
-        }
+      if (bus_timeout) {
+        WARN("Bus timeout!");
+      } else if (missing) {
+        WARN("0x%X '%s' NOT SEEN", state.address, state.name.c_str());
+      } else if (timed_out) {
+        WARN("0x%X '%s' TIMED OUT", state.address, state.name.c_str());
       }
       _valid = false;
     }
