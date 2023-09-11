@@ -21,7 +21,7 @@
 //#define DEBUG printf
 
 #define MAX_BAD_COUNTER 5
-#define CAN_INVALID_CNT 5
+#define CAN_INVALID_CNT 20
 
 void init_crc_lookup_tables();
 
@@ -76,7 +76,8 @@ public:
   uint64_t can_invalid_cnt = CAN_INVALID_CNT;
 
   CANParser(int abus, const std::string& dbc_name,
-            const std::vector<std::pair<uint32_t, int>> &messages);
+            const std::vector<MessageParseOptions> &options,
+            const std::vector<SignalParseOptions> &sigoptions);
   CANParser(int abus, const std::string& dbc_name, bool ignore_checksum, bool ignore_counter);
   #ifndef DYNAMIC_CAPNP
   void update_string(const std::string &data, bool sendcan);
