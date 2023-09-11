@@ -5,7 +5,7 @@ from common.numpy_fast import mean
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.car.gm.values import DBC, AccState, CanBus, STEER_THRESHOLD, CruiseButtons
+from selfdrive.car.gm.values import DBC, AccState, CanBus, STEER_THRESHOLD, CruiseButtons, CAR
 
 TransmissionType = car.CarParams.TransmissionType
 NetworkLocation = car.CarParams.NetworkLocation
