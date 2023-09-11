@@ -62,6 +62,7 @@ def gps_callback(exit_event):
     time.sleep(0.1)
 
 def imu_callback(exit_event):
+    pass
   # send 5x since 'sensor_tick' doesn't seem to work. limited by the world tick?
   # pm = messaging.PubMaster(['accelerometer', 'gyroscope'])
   # while not exit_event.is_set():
