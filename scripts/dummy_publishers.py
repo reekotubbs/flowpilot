@@ -63,25 +63,25 @@ def gps_callback(exit_event):
 
 def imu_callback(exit_event):
   # send 5x since 'sensor_tick' doesn't seem to work. limited by the world tick?
-  pm = messaging.PubMaster(['accelerometer', 'gyroscope'])
-  while not exit_event.is_set():
-    dat = messaging.new_message('accelerometer')
-    dat.accelerometer.sensor = 4
-    dat.accelerometer.type = 0x10
-    dat.accelerometer.timestamp = dat.logMonoTime  # TODO: use the IMU timestamp
-    dat.accelerometer.init('acceleration')
-    dat.accelerometer.acceleration.v = [0, 0, 0]
-    pm.send('accelerometer', dat)
+  # pm = messaging.PubMaster(['accelerometer', 'gyroscope'])
+  # while not exit_event.is_set():
+    # dat = messaging.new_message('accelerometer')
+    # dat.accelerometer.sensor = 4
+    # dat.accelerometer.type = 0x10
+    # dat.accelerometer.timestamp = dat.logMonoTime  # TODO: use the IMU timestamp
+    # dat.accelerometer.init('acceleration')
+    # dat.accelerometer.acceleration.v = [0, 0, 0]
+    # pm.send('accelerometer', dat)
 
-    # copied these numbers from locationd
-    dat = messaging.new_message('gyroscope')
-    dat.gyroscope.sensor = 5
-    dat.gyroscope.type = 0x10
-    dat.gyroscope.timestamp = dat.logMonoTime  # TODO: use the IMU timestamp
-    dat.gyroscope.init('gyroUncalibrated')
-    dat.gyroscope.gyroUncalibrated.v = [0, 0, 0]
-    pm.send('gyroscope', dat)
-    time.sleep(0.01)
+    # # copied these numbers from locationd
+    # dat = messaging.new_message('gyroscope')
+    # dat.gyroscope.sensor = 5
+    # dat.gyroscope.type = 0x10
+    # dat.gyroscope.timestamp = dat.logMonoTime  # TODO: use the IMU timestamp
+    # dat.gyroscope.init('gyroUncalibrated')
+    # dat.gyroscope.gyroUncalibrated.v = [0, 0, 0]
+    # pm.send('gyroscope', dat)
+    # time.sleep(0.01)
 
 def peripheral_state_function(exit_event: threading.Event):
   pm = messaging.PubMaster(['peripheralState'])
