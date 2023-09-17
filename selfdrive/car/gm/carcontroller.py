@@ -1,9 +1,9 @@
 from cereal import car
 from common.conversions import Conversions as CV
-from common.numpy_fast import interp
+from common.numpy_fast import interp, clip
 from common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
-from selfdrive.car import apply_driver_steer_torque_limits
+from selfdrive.car import apply_driver_steer_torque_limits, create_gas_interceptor_command
 from selfdrive.car.gm import gmcan
 from selfdrive.car.gm.values import DBC, CanBus, CarControllerParams, CruiseButtons, EV_CAR, CAMERA_ACC_CAR
 
@@ -140,8 +140,8 @@ class CarController:
         can_sends += gmcan.create_adas_keepalive(CanBus.POWERTRAIN)
     elif self.CP.openpilotLongitudinalControl:
       # Gas/regen and brakes - all at 25Hz
-      if (frame % 4) == 0:
-        if not c.active:
+      if (self.frame % 4) == 0:
+        if not CC.longActive:
           # Stock ECU sends max regen when not enabled.
           self.apply_gas = self.params.INACTIVE_REGEN
           self.apply_brake = 0
@@ -149,7 +149,7 @@ class CarController:
           self.apply_gas = int(round(interp(actuators.accel, self.params.GAS_LOOKUP_BP, self.params.GAS_LOOKUP_V)))
           self.apply_brake = int(round(interp(actuators.accel, self.params.BRAKE_LOOKUP_BP, self.params.BRAKE_LOOKUP_V)))
     
-        idx = (frame // 4) % 4
+        idx = (self.frame // 4) % 4
     
         at_full_stop = CC.enabled and CS.out.standstill
         # near_stop = enabled and (CS.out.vEgo < self.params.NEAR_STOP_BRAKE_PHASE)
