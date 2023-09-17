@@ -83,114 +83,114 @@ class CarController:
       idx = self.lka_steering_cmd_counter % 4
       can_sends.append(gmcan.create_steering_control(self.packer_pt, CanBus.POWERTRAIN, apply_steer, idx, CC.latActive))
 
-	if self.CP.carFingerprint not in CAMERA_ACC_CAR and self.CP.openpilotLongitudinalControl and not self.CP.pcmCruise:
-	  # Gas/regen, brakes, and UI commands - all at 25Hz
-	  if self.frame % 4 == 0:
-		stopping = actuators.longControlState == LongCtrlState.stopping
-		if not CC.longActive:
-		  # ASCM sends max regen when not enabled
-		  self.apply_gas = self.params.INACTIVE_REGEN
-		  self.apply_brake = 0
-		else:
-		  self.apply_gas = int(round(interp(actuators.accel, self.params.GAS_LOOKUP_BP, self.params.GAS_LOOKUP_V)))
-		  self.apply_brake = int(round(interp(actuators.accel, self.params.BRAKE_LOOKUP_BP, self.params.BRAKE_LOOKUP_V)))
-		  # Don't allow any gas above inactive regen while stopping
-		  # FIXME: brakes aren't applied immediately when enabling at a stop
-		  if stopping:
-			self.apply_gas = self.params.INACTIVE_REGEN
+    if self.CP.carFingerprint not in CAMERA_ACC_CAR and self.CP.openpilotLongitudinalControl and not self.CP.pcmCruise:
+      # Gas/regen, brakes, and UI commands - all at 25Hz
+      if self.frame % 4 == 0:
+        stopping = actuators.longControlState == LongCtrlState.stopping
+        if not CC.longActive:
+          # ASCM sends max regen when not enabled
+          self.apply_gas = self.params.INACTIVE_REGEN
+          self.apply_brake = 0
+        else:
+          self.apply_gas = int(round(interp(actuators.accel, self.params.GAS_LOOKUP_BP, self.params.GAS_LOOKUP_V)))
+          self.apply_brake = int(round(interp(actuators.accel, self.params.BRAKE_LOOKUP_BP, self.params.BRAKE_LOOKUP_V)))
+          # Don't allow any gas above inactive regen while stopping
+          # FIXME: brakes aren't applied immediately when enabling at a stop
+          if stopping:
+            self.apply_gas = self.params.INACTIVE_REGEN
+            
+        idx = (self.frame // 4) % 4
 
-		idx = (self.frame // 4) % 4
+    at_full_stop = CC.longActive and CS.out.standstill
+    near_stop = CC.longActive and (CS.out.vEgo < self.params.NEAR_STOP_BRAKE_PHASE)
+    friction_brake_bus = CanBus.CHASSIS
+    # GM Camera exceptions
+    # TODO: can we always check the longControlState?
+    if self.CP.networkLocation == NetworkLocation.fwdCamera:
+      at_full_stop = at_full_stop and stopping
+      friction_brake_bus = CanBus.POWERTRAIN
 
-		at_full_stop = CC.longActive and CS.out.standstill
-		near_stop = CC.longActive and (CS.out.vEgo < self.params.NEAR_STOP_BRAKE_PHASE)
-		friction_brake_bus = CanBus.CHASSIS
-		# GM Camera exceptions
-		# TODO: can we always check the longControlState?
-		if self.CP.networkLocation == NetworkLocation.fwdCamera:
-		  at_full_stop = at_full_stop and stopping
-		  friction_brake_bus = CanBus.POWERTRAIN
+    # GasRegenCmdActive needs to be 1 to avoid cruise faults. It describes the ACC state, not actuation
+    can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, self.apply_gas, idx, CC.enabled, at_full_stop))
+    can_sends.append(gmcan.create_friction_brake_command(self.packer_ch, friction_brake_bus, self.apply_brake,
+                                                         idx, CC.enabled, near_stop, at_full_stop, self.CP))
 
-		# GasRegenCmdActive needs to be 1 to avoid cruise faults. It describes the ACC state, not actuation
-		can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, self.apply_gas, idx, CC.enabled, at_full_stop))
-		can_sends.append(gmcan.create_friction_brake_command(self.packer_ch, friction_brake_bus, self.apply_brake,
-															 idx, CC.enabled, near_stop, at_full_stop, self.CP))
+    # Send dashboard UI commands (ACC status)
+    send_fcw = hud_alert == VisualAlert.fcw
+    can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, CC.enabled,
+                                                        hud_v_cruise * CV.MS_TO_KPH, hud_control.leadVisible, send_fcw))
 
-		# Send dashboard UI commands (ACC status)
-		send_fcw = hud_alert == VisualAlert.fcw
-		can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, CC.enabled,
-															hud_v_cruise * CV.MS_TO_KPH, hud_control.leadVisible, send_fcw))
+    # Radar needs to know current speed and yaw rate (50hz),
+    # and that ADAS is alive (10hz)
+    if not self.CP.radarUnavailable:
+      tt = self.frame * DT_CTRL
+      time_and_headlights_step = 10
+      if self.frame % time_and_headlights_step == 0:
+        idx = (self.frame // time_and_headlights_step) % 4
+        can_sends.append(gmcan.create_adas_time_status(CanBus.OBSTACLE, int((tt - self.start_time) * 60), idx))
+        can_sends.append(gmcan.create_adas_headlights_status(self.packer_obj, CanBus.OBSTACLE))
 
-	  # Radar needs to know current speed and yaw rate (50hz),
-	  # and that ADAS is alive (10hz)
-	  if not self.CP.radarUnavailable:
-		tt = self.frame * DT_CTRL
-		time_and_headlights_step = 10
-		if self.frame % time_and_headlights_step == 0:
-		  idx = (self.frame // time_and_headlights_step) % 4
-		  can_sends.append(gmcan.create_adas_time_status(CanBus.OBSTACLE, int((tt - self.start_time) * 60), idx))
-		  can_sends.append(gmcan.create_adas_headlights_status(self.packer_obj, CanBus.OBSTACLE))
+      speed_and_accelerometer_step = 2
+      if self.frame % speed_and_accelerometer_step == 0:
+        idx = (self.frame // speed_and_accelerometer_step) % 4
+        can_sends.append(gmcan.create_adas_steering_status(CanBus.OBSTACLE, idx))
+        can_sends.append(gmcan.create_adas_accelerometer_speed_status(CanBus.OBSTACLE, CS.out.vEgo, idx))
 
-		speed_and_accelerometer_step = 2
-		if self.frame % speed_and_accelerometer_step == 0:
-		  idx = (self.frame // speed_and_accelerometer_step) % 4
-		  can_sends.append(gmcan.create_adas_steering_status(CanBus.OBSTACLE, idx))
-		  can_sends.append(gmcan.create_adas_accelerometer_speed_status(CanBus.OBSTACLE, CS.out.vEgo, idx))
+    if self.CP.networkLocation == NetworkLocation.gateway and self.frame % self.params.ADAS_KEEPALIVE_STEP == 0:
+      can_sends += gmcan.create_adas_keepalive(CanBus.POWERTRAIN)
+  elif self.CP.openpilotLongitudinalControl:
+    # Gas/regen and brakes - all at 25Hz
+    if (frame % 4) == 0:
+      if not c.active:
+        # Stock ECU sends max regen when not enabled.
+        self.apply_gas = self.params.INACTIVE_REGEN
+        self.apply_brake = 0
+      else:
+        self.apply_gas = int(round(interp(actuators.accel, self.params.GAS_LOOKUP_BP, self.params.GAS_LOOKUP_V)))
+        self.apply_brake = int(round(interp(actuators.accel, self.params.BRAKE_LOOKUP_BP, self.params.BRAKE_LOOKUP_V)))
 
-	  if self.CP.networkLocation == NetworkLocation.gateway and self.frame % self.params.ADAS_KEEPALIVE_STEP == 0:
-		can_sends += gmcan.create_adas_keepalive(CanBus.POWERTRAIN)
-	elif self.CP.openpilotLongitudinalControl:
-	  # Gas/regen and brakes - all at 25Hz
-	  if (frame % 4) == 0:
-		if not c.active:
-		  # Stock ECU sends max regen when not enabled.
-		  self.apply_gas = self.params.INACTIVE_REGEN
-		  self.apply_brake = 0
-		else:
-		  self.apply_gas = int(round(interp(actuators.accel, self.params.GAS_LOOKUP_BP, self.params.GAS_LOOKUP_V)))
-		  self.apply_brake = int(round(interp(actuators.accel, self.params.BRAKE_LOOKUP_BP, self.params.BRAKE_LOOKUP_V)))
+      idx = (frame // 4) % 4
 
-		idx = (frame // 4) % 4
+      at_full_stop = CC.enabled and CS.out.standstill
+      # near_stop = enabled and (CS.out.vEgo < self.params.NEAR_STOP_BRAKE_PHASE)
+      # VOACC based cars have brakes on PT bus - OP won't be doing VOACC for a while
+      # can_sends.append(gmcan.create_friction_brake_command(self.packer_pt, CanBus.POWERTRAIN, self.apply_brake, idx, near_stop, at_full_stop))
+    
+      if self.CP.enableGasInterceptor:
+        # TODO: JJS Unsure if low is single pedal mode in any non-electric cars
+        singlePedalMode = CS.out.gearShifter == GearShifter.low and self.CP.carFingerprint in EV_CAR
+        # TODO: JJS Detect saturated battery and fallback to D mode (until regen is available
+        if singlePedalMode:
+          # In L Mode, Pedal applies regen at a fixed coast-point (TODO: max regen in L mode may be different per car)
+          # This will apply to EVs in L mode.
+          # accel values below zero down to a cutoff point 
+          #  that approximates the percentage of braking regen can handle should be scaled between 0 and the coast-point
+          # accell values below this point will need to be add-on future hijacked AEB
+          # TODO: Determine (or guess) at regen precentage
 
-		at_full_stop = CC.enabled and CS.out.standstill
-		# near_stop = enabled and (CS.out.vEgo < self.params.NEAR_STOP_BRAKE_PHASE)
-		# VOACC based cars have brakes on PT bus - OP won't be doing VOACC for a while
-		# can_sends.append(gmcan.create_friction_brake_command(self.packer_pt, CanBus.POWERTRAIN, self.apply_brake, idx, near_stop, at_full_stop))
-		
-		if self.CP.enableGasInterceptor:
-		  # TODO: JJS Unsure if low is single pedal mode in any non-electric cars
-		  singlePedalMode = CS.out.gearShifter == GearShifter.low and self.CP.carFingerprint in EV_CAR
-		  # TODO: JJS Detect saturated battery and fallback to D mode (until regen is available
-		  if singlePedalMode:
-			# In L Mode, Pedal applies regen at a fixed coast-point (TODO: max regen in L mode may be different per car)
-			# This will apply to EVs in L mode.
-			# accel values below zero down to a cutoff point 
-			#  that approximates the percentage of braking regen can handle should be scaled between 0 and the coast-point
-			# accell values below this point will need to be add-on future hijacked AEB
-			# TODO: Determine (or guess) at regen precentage
-
-			# From Felger's Bolt Bort
-			#It seems in L mode, accel / decel point is around 1/5
-			#-1-------AEB------0----regen---0.15-------accel----------+1
-			# Shrink gas request to 0.85, have it start at 0.2
-			# Shrink brake request to 0.85, first 0.15 gives regen, rest gives AEB
-			
-			zero = 40/256
-			
-			if (actuators.accel > 0.):
-			  pedal_gas = clip(((1-zero) * actuators.accel + zero), 0., 1.)
-			else:
-			  pedal_gas = clip(actuators.accel, 0., zero) # Make brake the same size as gas, but clip to regen
-			  # aeb = actuators.brake*(1-zero)-regen # For use later, braking more than regen
-		  else:
-			# In D Mode, Pedal is close to coast at 0, 100% at 1.
-			# This will apply to non-EVs and EVs in D mode.
-			# accel values below zero will need to be handled by future hijacked AEB
-			# TODO: Determine if this clipping is correct
-			pedal_gas = clip(actuators.accel, 0., 1.) 
-			
-		  can_sends.append(create_gas_interceptor_command(self.packer_pt, pedal_gas, idx))
-		else:
-		  can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, self.apply_gas, idx, CC.enabled, at_full_stop))
+          # From Felger's Bolt Bort
+          #It seems in L mode, accel / decel point is around 1/5
+          #-1-------AEB------0----regen---0.15-------accel----------+1
+          # Shrink gas request to 0.85, have it start at 0.2
+          # Shrink brake request to 0.85, first 0.15 gives regen, rest gives AEB
+        
+          zero = 40/256
+        
+          if (actuators.accel > 0.):
+            pedal_gas = clip(((1-zero) * actuators.accel + zero), 0., 1.)
+          else:
+            pedal_gas = clip(actuators.accel, 0., zero) # Make brake the same size as gas, but clip to regen
+            # aeb = actuators.brake*(1-zero)-regen # For use later, braking more than regen
+        else:
+          # In D Mode, Pedal is close to coast at 0, 100% at 1.
+          # This will apply to non-EVs and EVs in D mode.
+          # accel values below zero will need to be handled by future hijacked AEB
+          # TODO: Determine if this clipping is correct
+          pedal_gas = clip(actuators.accel, 0., 1.) 
+        
+        can_sends.append(create_gas_interceptor_command(self.packer_pt, pedal_gas, idx))
+      else:
+        can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, self.apply_gas, idx, CC.enabled, at_full_stop))
 
     else:
       # While car is braking, cancel button causes ECM to enter a soft disable state with a fault status.
