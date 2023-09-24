@@ -78,7 +78,7 @@ class CarState(CarStateBase):
       ret.gas = pt_cp.vl["AcceleratorPedal2"]["AcceleratorPedal2"] / 254.
       ret.gasPressed = ret.gas > 1e-5
 
-    ret.steeringAngleDeg = pt_cp.vl["PSCMSteeringAngle"]["SteeringWheelAngle"]
+    ret.steeringAngleDeg = pt_cp.vl["PSCMSteeringAngle"]["SteeringWheelAngle"] + 1.5
     ret.steeringRateDeg = pt_cp.vl["PSCMSteeringAngle"]["SteeringWheelRate"]
     ret.steeringTorque = pt_cp.vl["PSCMStatus"]["LKADriverAppldTrq"]
     ret.steeringTorqueEps = pt_cp.vl["PSCMStatus"]["LKATorqueDelivered"]
