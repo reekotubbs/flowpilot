@@ -12,7 +12,7 @@ TRAJECTORY_SIZE = 33
 # model path is in the frame of the camera
 # so a path offset is not needed.
 PATH_OFFSET = 0.00
-CAMERA_OFFSET = -0.06 # TODO: Make this user adjustable.
+CAMERA_OFFSET = -0.02 # TODO: Make this user adjustable.
 
 
 class LanePlanner:

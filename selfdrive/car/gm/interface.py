@@ -139,7 +139,7 @@ class CarInterface(CarInterfaceBase):
     if candidate == CAR.VOLT or candidate == CAR.VOLT_NR:
       ret.mass = 1607. + STD_CARGO_KG
       ret.wheelbase = 2.69
-      ret.steerRatio = 17.7  # Stock 15.7, LiveParameters
+      ret.steerRatio = 22.7  # Stock 15.7, LiveParameters
       tire_stiffness_factor = 0.469  # Stock Michelin Energy Saver A/S, LiveParameters
       ret.centerToFront = ret.wheelbase * 0.45  # Volt Gen 1, TODO corner weigh
 
